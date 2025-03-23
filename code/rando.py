@@ -38,9 +38,12 @@ def show_random_image(med_error):
             elif ans == '-1':
                 break
             i = r.randint(0, len(files))
+            os.system('cls')
         except:
             break
     print()
+    if ans_num == 0:
+        return
     print('答對百分比:', cor_num/ans_num * 100, '%')
     # print('答對數:', cor_num)
     # print('答錯數:', ans_num - cor_num)
@@ -64,7 +67,9 @@ if __name__ == '__main__':
             med, times = i.split(' ')
             med_error[med] = int(times)
     med_error = show_random_image(med_error)
-
-    with open('./code/error.txt', 'w', encoding='utf-8') as f:
-        for i, j in sorted(med_error.items(), key=lambda x: x[1], reverse=True):
-            f.write(f'{i} {j}\n')
+    try:
+        with open('./code/error.txt', 'w', encoding='utf-8') as f:
+            for i, j in sorted(med_error.items(), key=lambda x: x[1], reverse=True):
+                f.write(f'{i} {j}\n')
+    except:
+        pass
