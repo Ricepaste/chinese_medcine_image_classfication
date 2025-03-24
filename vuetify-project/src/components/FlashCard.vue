@@ -102,7 +102,6 @@ const LoadDeckfromLocal = async () => {
  * handle next card button click
  */
 const nextCard = () => {
-  // TODO: user could click nextCard before the image is loaded
   // TODO: randomize the card order
   cardIndex = (cardIndex + 1) % currentDeck.value.length
   flashcard.value = currentDeck.value[cardIndex] ?? null
