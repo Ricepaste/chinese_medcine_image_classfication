@@ -160,5 +160,6 @@ const showHistory = () => {
   line-height: 2rem;
   cursor: pointer;
   align-items: center;
+  padding: 0px 1rem 0px 1rem;
 }
 </style>

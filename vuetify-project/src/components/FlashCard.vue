@@ -3,7 +3,7 @@ import { useFlashcard } from '@/composables/flashcard'
 import { onMounted } from 'vue'
 import History from '@/components/History.vue'
 
-const { currentDeck, loadFinished, flashcard, showAnswer, nextCard, initFlashcard } = useFlashcard() // Destructure showAnswer
+const { currentDeck, loadFinished, flashcard, showAnswer, nextCard, initFlashcard } = useFlashcard()
 
 onMounted(async () => {
   await initFlashcard()
@@ -17,7 +17,8 @@ onMounted(async () => {
     <v-img
       v-if="loadFinished"
       :src="flashcard.imageSrc"
-      class="flashcard-image"
+      :class="`flashcard-image ${showAnswer ? 'default' : 'cursor-pointer'}`"
+      @click="showAnswer = true"
     />
     <p
       v-else
@@ -30,27 +31,30 @@ onMounted(async () => {
       flat
       class="flashcard-title-bar"
     >
-      <v-toolbar-title class="justify-center flashcard-title">
+      <v-toolbar-title class="flashcard-title">
         <span v-if="showAnswer">{{ flashcard.name }}</span>
         <span v-else>???</span>
       </v-toolbar-title>
     </v-toolbar>
 
     <v-container class="flashcard-actions-bar">
+      <!-- TODO: handle correct and wrong -->
       <v-btn
+        class="icon-button"
         color="primary"
-        :disabled="!loadFinished || showAnswer"
-        @click="showAnswer = true"
+        :disabled="!showAnswer"
+        @click="nextCard"
       >
-        看答案
+        <v-icon>mdi-check</v-icon>
       </v-btn>
       <History :disabled="!loadFinished" />
       <v-btn
-        color="secondary"
-        :disabled="!loadFinished"
-        @click="nextCard"
+        class="icon-button"
+        color="error"
+        :disabled="!showAnswer"
+        @click="showAnswer = !showAnswer"
       >
-        下一張
+        <v-icon>mdi-close</v-icon>
       </v-btn>
     </v-container>
   </v-container>
@@ -76,7 +80,7 @@ body {
   height: 100vh; /* 設定 flashcard-container 高度為 100vh (viewport height) */
   border: 2px solid #ccc; /* 加入邊框，模擬卡片效果 */
   border-radius: 24px;
-  overflow: visible;
+  overflow: hidden;
   padding: 0px;
 }
 
@@ -85,6 +89,7 @@ body {
   object-fit: contain; /* 圖片填滿容器，可能黑邊 */
   flex: 1; /* 讓圖片佔據剩餘空間 */
   min-height: 200px; /* 設定圖片最小高度 */
+  /* cursor: v-bind(showAnswer ? 'pointer' : 'default'); */
 }
 
 .loading-placeholder {
@@ -109,10 +114,32 @@ body {
 }
 
 .flashcard-actions-bar {
+  display: flex; /* 保持 Flexbox 佈局 */
   background-color: transparent; /* 保持透明背景或移除背景色 */
   box-shadow: none; /* 移除陰影 */
   padding: 16px;
-  display: flex; /* 保持 Flexbox 佈局 */
   justify-content: space-around;
+}
+
+.icon-button {
+  display: flex; /* 使用 Flexbox */
+  justify-content: center; /* 水平居中 */
+  align-items: center; /* 垂直居中 */
+  flex: 1; /* 佔據可用空間 */
+  cursor: pointer;
+  font-size: 1.5rem; /* 或您想要的任何大小 */
+  line-height: 2rem;
+  border-radius: 8px;
+  margin: 0 8px;
+  /* border: 2px solid #cccccc80; */
+}
+.icon-button:first-child {
+  margin-left: 0px;
+}
+.icon-button:last-child {
+  margin-right: 0px;
+}
+.icon-button[disabled] {
+  opacity: 0.5; /* 或您想要的任何禁用樣式 */
 }
 </style>

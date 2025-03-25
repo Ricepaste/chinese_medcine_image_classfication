@@ -40,10 +40,10 @@ export function useFlashcard() {
       itemNames = []
     }
 
-    // let _ = 0
+    let _ = 0
     // let total = 0
     for (const itemName of itemNames) {
-      // if (_++ === 10) break
+      if (_++ === 10) break
       if (!currentDeck.value) {
         throw new Error('currentDeck is not initialized when loading images')
       }
