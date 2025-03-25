@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/composables/useFlashcard.ts
 import type { Flashcard } from '@/types/Flashcard'
 import { ref, type Ref } from 'vue'
@@ -29,7 +30,6 @@ export function useFlashcard() {
       const configResponse = await fetch(`${photoFolderPath}deck-config.json`)
 
       const config: { itemNames: string[] } = await configResponse.json()
-      // console.log(`config: ${JSON.stringify(config)}`)
 
       if (!Array.isArray(config.itemNames)) {
         throw new Error('deck-config.json failed to parse itemNames')
@@ -73,12 +73,6 @@ export function useFlashcard() {
       while (imageIndex < 10) {
         const imagePngSrc = `${photoFolderPath}${itemName}${imageIndex}.png`
         try {
-          // const response = await fetch(imageSrc)
-          // const blob = await response.blob()
-          // if (blob.type !== 'image/jpeg') {
-          //   break
-          // }
-          // currentDeck.value.push({ imageSrc: imageSrc, name: itemName } as Flashcard)
           await loadImageBySrc(imagePngSrc, itemName)
           count++
         } catch (error) {
@@ -104,7 +98,9 @@ export function useFlashcard() {
     loadFinished.value = true
   }
   const nextCard = () => {
-    cardIndex = (cardIndex + 1) % currentDeck.value.length
+    // cardIndex = (cardIndex + 1) % currentDeck.value.length
+    cardIndex = Math.floor(Math.random() * currentDeck.value.length)
+
     flashcard.value = currentDeck.value[cardIndex] ?? { imageSrc: '', name: '' }
     showAnswer.value = false // Reset showAnswer to false
     console.log(`nextCard: ${flashcard.value.name} cardIndex: ${cardIndex}`)
@@ -113,7 +109,8 @@ export function useFlashcard() {
   const initFlashcard = async () => {
     await LoadDeckfromLocal()
     if (currentDeck.value.length > 0) {
-      flashcard.value = currentDeck.value[0]
+      const randomIndex = Math.floor(Math.random() * currentDeck.value.length)
+      flashcard.value = currentDeck.value[randomIndex]
     }
   }
 

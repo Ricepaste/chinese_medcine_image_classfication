@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useFlashcard } from '@/composables/FlashCard'
+import { useFlashcard } from '@/composables/flashcard'
 import { onMounted } from 'vue'
+import History from '@/components/History.vue'
 
 const { currentDeck, loadFinished, flashcard, showAnswer, nextCard, initFlashcard } = useFlashcard() // Destructure showAnswer
 
@@ -17,7 +18,6 @@ onMounted(async () => {
       v-if="loadFinished"
       :src="flashcard.imageSrc"
       class="flashcard-image"
-      rounded="xl"
     />
     <p
       v-else
@@ -39,11 +39,12 @@ onMounted(async () => {
     <v-container class="flashcard-actions-bar">
       <v-btn
         color="primary"
-        :disabled="showAnswer || !loadFinished"
+        :disabled="!loadFinished || showAnswer"
         @click="showAnswer = true"
       >
-        顯示答案
+        看答案
       </v-btn>
+      <History :disabled="!loadFinished" />
       <v-btn
         color="secondary"
         :disabled="!loadFinished"
@@ -72,10 +73,10 @@ body {
   align-items: stretch; /* 確保子元素可以水平延展 */
   max-width: 720px; /* 設定卡片最大寬度，你可以根據需要調整 */
   width: 100%; /* 在較小螢幕上佔滿寬度 */
-  height: 100vh; /* **關鍵**: 設定 flashcard-container 高度為 100vh (viewport height) */
+  height: 100vh; /* 設定 flashcard-container 高度為 100vh (viewport height) */
   border: 2px solid #ccc; /* 加入邊框，模擬卡片效果 */
-  border-radius: 8px; /* 加入圓角，讓邊框更柔和 */
-  overflow: visible; /* 確保內容超出邊界時被隱藏 */
+  border-radius: 24px;
+  overflow: visible;
   padding: 0px;
 }
 
@@ -83,7 +84,7 @@ body {
   width: 100%;
   object-fit: contain; /* 圖片填滿容器，可能黑邊 */
   flex: 1; /* 讓圖片佔據剩餘空間 */
-  min-height: 200px; /* 設定圖片最小高度，你可以根據需要調整 */
+  min-height: 200px; /* 設定圖片最小高度 */
 }
 
 .loading-placeholder {
@@ -96,8 +97,8 @@ body {
 }
 
 .flashcard-title-bar {
-  background-color: transparent; /* 移除 toolbar 背景色 */
-  box-shadow: none; /* 移除 toolbar 陰影 */
+  background-color: transparent;
+  box-shadow: none;
 }
 
 .flashcard-title {
@@ -109,9 +110,9 @@ body {
 
 .flashcard-actions-bar {
   background-color: transparent; /* 保持透明背景或移除背景色 */
-  box-shadow: none; /* 保持移除陰影 */
+  box-shadow: none; /* 移除陰影 */
   padding: 16px;
   display: flex; /* 保持 Flexbox 佈局 */
-  justify-content: space-around; /* 再次使用 space-between，現在應該會生效 */
+  justify-content: space-around;
 }
 </style>
