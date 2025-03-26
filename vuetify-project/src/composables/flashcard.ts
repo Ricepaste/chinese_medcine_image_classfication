@@ -145,6 +145,9 @@ export function useFlashcard() {
       timestamp: Date.now()
     }
     historyRecords.value.push(record)
+    if (historyRecords.value.length > 100) {
+      historyRecords.value.shift()
+    }
     console.log(`addHistoryRecord: ${record.flashcard.name} isCorrect: ${isCorrect}`)
     console.log(historyRecords.value)
   }
