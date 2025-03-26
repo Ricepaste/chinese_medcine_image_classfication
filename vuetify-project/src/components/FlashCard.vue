@@ -1,13 +1,51 @@
 <script setup lang="ts">
+// src/components/FlashCard.vue
 import { useFlashcard } from '@/composables/flashcard'
 import { onMounted } from 'vue'
 import History from '@/components/History.vue'
 
-const { currentDeck, loadFinished, flashcard, showAnswer, nextCard, initFlashcard } = useFlashcard()
+const {
+  currentDeck,
+  loadFinished,
+  flashcard,
+  showAnswer,
+  initFlashcard,
+  handleCorrect,
+  handleIncorrect
+} = useFlashcard()
 
 onMounted(async () => {
   await initFlashcard()
+  window.addEventListener('keydown', handleKeyDown)
 })
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (!loadFinished.value) return
+
+  switch (event.key) {
+    case 'w':
+    case 'W':
+    case 'ArrowUp':
+      showAnswer.value = true
+      break
+    case 'a':
+    case 'A':
+    case 'ArrowLeft':
+      if (showAnswer.value) handleCorrect()
+      break
+    case 'd':
+    case 'D':
+    case 'ArrowRight':
+      if (showAnswer.value) handleIncorrect()
+      break
+    case 's':
+    case 'S':
+    case 'ArrowDown':
+      console.log('History button pressed')
+      // TODO: Handle History button press
+      break
+  }
+}
 </script>
 <template>
   <v-container
@@ -43,7 +81,7 @@ onMounted(async () => {
         class="icon-button"
         color="primary"
         :disabled="!showAnswer"
-        @click="nextCard"
+        @click="handleCorrect"
       >
         <v-icon>mdi-check</v-icon>
       </v-btn>
@@ -52,7 +90,7 @@ onMounted(async () => {
         class="icon-button"
         color="error"
         :disabled="!showAnswer"
-        @click="showAnswer = !showAnswer"
+        @click="handleIncorrect"
       >
         <v-icon>mdi-close</v-icon>
       </v-btn>
