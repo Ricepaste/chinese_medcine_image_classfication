@@ -1,120 +1,43 @@
 <script setup lang="ts">
-import type { Flashcard } from '@/types/Flashcard'
-import type { Ref } from 'vue'
-import { onMounted, ref } from 'vue'
-type CardDeck = Flashcard[]
+// src/components/FlashCard.vue
+import { useFlashcard } from '@/composables/flashcard'
+import { onMounted } from 'vue'
+import History from '@/components/History.vue'
 
-const currentDeck: Ref<CardDeck> = ref([])
-const showAnswer = ref(false)
-let cardIndex = 0
-const loadFinished = ref(false)
-const flashcard: Ref<Flashcard> = ref({ imageSrc: '', name: '' })
-/**
- * check if src is valid image(jpeg or png), then store Flashcard to currentDeck, if not valid, throw error
- * @param src : image source
- * @param itemName : item name
- */
-const loadImageBySrc = async (src: string, itemName: string): Promise<void> => {
-  try {
-    const response = await fetch(src)
-    const blob = await response.blob()
-    if (blob.type === 'image/jpeg' || blob.type === 'image/png') {
-      currentDeck.value.push(<Flashcard>{ imageSrc: src, name: itemName })
-    } else {
-      throw new Error('Not a jpeg image')
-    }
-  } catch (error) {
-    console.error(`Error loading image ${src}`, error)
-  }
-}
+const { loadFinished, flashcard, showAnswer, HandleCorrect, HandleIncorrect } = useFlashcard()
 
-// const preloadImages = (imageUrls: string[]) => {
-//   imageUrls.forEach((url) => {
-//     const img = new Image()
-//     img.src = url
-//   })
-//   console.log(`Preloading ${imageUrls.length} images...`)
-// }
-
-/**
- * load deck from folder public/photo/itemname*.{png, jpg}
- */
-const LoadDeckfromLocal = async () => {
-  let itemNames: string[] = []
-  const photoFolderPath = `${import.meta.env.BASE_URL}photo/`
-
-  try {
-    const configResponse = await fetch(`${photoFolderPath}deck-config.json`)
-
-    const config: { itemNames: string[] } = await configResponse.json()
-    // console.log(`config: ${JSON.stringify(config)}`)
-
-    if (!Array.isArray(config.itemNames)) {
-      throw new Error('deck-config.json failed to parse itemNames')
-    }
-    itemNames = config.itemNames
-  } catch (error) {
-    console.error('Error loading or parsing deck-config.json', error)
-    itemNames = []
-  }
-
-  // let _ = 0
-  for (const itemName of itemNames) {
-    // if (_++ === 3) break
-    if (!currentDeck.value) {
-      throw new Error('currentDeck is not initialized when loading images')
-    }
-    const imageSrc = `${photoFolderPath}${itemName}.png`
-    let count = 0
-    // get itemName.png
-    try {
-      await loadImageBySrc(imageSrc, itemName)
-      count++
-    } catch (error) {
-      console.error(`Error loading image by src: ${imageSrc}`, error)
-    }
-
-    // get itemNameIndex.png
-    let imageIndex = 1 // Start index from 1 (itemName1.png, itemName2.png, ...)
-
-    while (imageIndex < 4) {
-      const imageSrc = `${photoFolderPath}${itemName}${imageIndex}.png`
-      try {
-        const response = await fetch(imageSrc)
-        const blob = await response.blob()
-        if (blob.type !== 'image/jpeg') {
-          break
-        }
-        currentDeck.value.push(<Flashcard>{ imageSrc: imageSrc, name: itemName })
-        count++
-        imageIndex++
-      } catch (error) {
-        console.error(`Error loading image ${imageSrc}`, error)
-        break
-      }
-    }
-    console.log(`Loaded ${count} images for ${itemName}`)
-  }
-  loadFinished.value = true
-}
-
-/**
- * handle next card button click
- */
-const nextCard = () => {
-  // TODO: randomize the card order
-  cardIndex = (cardIndex + 1) % currentDeck.value.length
-  flashcard.value = currentDeck.value[cardIndex] ?? null
-  showAnswer.value = false
-  console.log(`nextCard: ${flashcard.value.name} cardIndex: ${cardIndex}`)
-  // ...
-}
-onMounted(async () => {
-  await LoadDeckfromLocal()
-  if (currentDeck.value.length > 0) {
-    flashcard.value = currentDeck.value[0]
-  }
+onMounted(() => {
+  // initFlashcard()
+  window.addEventListener('keyup', handleKeyUp)
 })
+
+const handleKeyUp = (event: KeyboardEvent) => {
+  if (!loadFinished.value) return
+
+  switch (event.key) {
+    case 'w':
+    case 'W':
+    case 'ArrowUp':
+      showAnswer.value = true
+      break
+    case 'a':
+    case 'A':
+    case 'ArrowLeft':
+      if (showAnswer.value) HandleCorrect()
+      break
+    case 'd':
+    case 'D':
+    case 'ArrowRight':
+      if (showAnswer.value) HandleIncorrect()
+      break
+    case 's':
+    case 'S':
+    case 'ArrowDown':
+      console.log('History button pressed')
+      // TODO: Handle History button press
+      break
+  }
+}
 </script>
 <template>
   <v-container
@@ -124,8 +47,8 @@ onMounted(async () => {
     <v-img
       v-if="loadFinished"
       :src="flashcard.imageSrc"
-      class="flashcard-image"
-      rounded="xl"
+      :class="`flashcard-image ${showAnswer ? 'default' : 'cursor-pointer'}`"
+      @click="showAnswer = true"
     />
     <p
       v-else
@@ -138,7 +61,7 @@ onMounted(async () => {
       flat
       class="flashcard-title-bar"
     >
-      <v-toolbar-title class="justify-center flashcard-title">
+      <v-toolbar-title class="flashcard-title">
         <span v-if="showAnswer">{{ flashcard.name }}</span>
         <span v-else>???</span>
       </v-toolbar-title>
@@ -146,26 +69,24 @@ onMounted(async () => {
 
     <v-container class="flashcard-actions-bar">
       <v-btn
+        class="icon-button"
         color="primary"
-        :disabled="showAnswer || !loadFinished"
-        @click="showAnswer = true"
+        :disabled="!showAnswer"
+        @click="HandleCorrect"
       >
-        顯示答案
+        <v-icon>mdi-check</v-icon>
       </v-btn>
+      <History :disabled="!loadFinished" />
       <v-btn
-        color="secondary"
-        :disabled="!loadFinished"
-        @click="nextCard"
+        class="icon-button"
+        color="error"
+        :disabled="!showAnswer"
+        @click="HandleIncorrect"
       >
-        下一張
+        <v-icon>mdi-close</v-icon>
       </v-btn>
     </v-container>
   </v-container>
-  <div>
-    <!-- <h1>{{ currentDeck2 ? currentDeck2[0].imageSrc : 'loading' }}</h1> -->
-    <!-- <h1>currentDeck.imageSrc[0]: {{ currentDeck.imageSrc[0] }}</h1> -->
-    <!-- <h1>{{ flashcard ?? 'loading' }}</h1> -->
-  </div>
 </template>
 
 <style scoped>
@@ -180,10 +101,10 @@ body {
   align-items: stretch; /* 確保子元素可以水平延展 */
   max-width: 720px; /* 設定卡片最大寬度，你可以根據需要調整 */
   width: 100%; /* 在較小螢幕上佔滿寬度 */
-  height: 100vh; /* **關鍵**: 設定 flashcard-container 高度為 100vh (viewport height) */
+  height: 100vh; /* 設定 flashcard-container 高度為 100vh (viewport height) */
   border: 2px solid #ccc; /* 加入邊框，模擬卡片效果 */
-  border-radius: 8px; /* 加入圓角，讓邊框更柔和 */
-  overflow: visible; /* 確保內容超出邊界時被隱藏 */
+  border-radius: 24px;
+  overflow: hidden;
   padding: 0px;
 }
 
@@ -191,7 +112,8 @@ body {
   width: 100%;
   object-fit: contain; /* 圖片填滿容器，可能黑邊 */
   flex: 1; /* 讓圖片佔據剩餘空間 */
-  min-height: 200px; /* 設定圖片最小高度，你可以根據需要調整 */
+  min-height: 200px; /* 設定圖片最小高度 */
+  /* cursor: v-bind(showAnswer ? 'pointer' : 'default'); */
 }
 
 .loading-placeholder {
@@ -204,8 +126,9 @@ body {
 }
 
 .flashcard-title-bar {
-  background-color: transparent; /* 移除 toolbar 背景色 */
-  box-shadow: none; /* 移除 toolbar 陰影 */
+  height: 40px;
+  background-color: transparent;
+  box-shadow: none;
 }
 
 .flashcard-title {
@@ -216,10 +139,32 @@ body {
 }
 
 .flashcard-actions-bar {
-  background-color: transparent; /* 保持透明背景或移除背景色 */
-  box-shadow: none; /* 保持移除陰影 */
-  padding: 16px;
   display: flex; /* 保持 Flexbox 佈局 */
-  justify-content: space-around; /* 再次使用 space-between，現在應該會生效 */
+  background-color: transparent; /* 保持透明背景或移除背景色 */
+  box-shadow: none; /* 移除陰影 */
+  padding: 16px;
+  justify-content: space-around;
+}
+
+.icon-button {
+  display: flex; /* 使用 Flexbox */
+  justify-content: center; /* 水平居中 */
+  align-items: center; /* 垂直居中 */
+  flex: 1; /* 佔據可用空間 */
+  cursor: pointer;
+  font-size: 1.5rem; /* 或您想要的任何大小 */
+  line-height: 2rem;
+  border-radius: 8px;
+  margin: 0 8px;
+  /* border: 2px solid #cccccc80; */
+}
+.icon-button:first-child {
+  margin-left: 0px;
+}
+.icon-button:last-child {
+  margin-right: 0px;
+}
+.icon-button[disabled] {
+  opacity: 0.5; /* 或您想要的任何禁用樣式 */
 }
 </style>
