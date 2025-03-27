@@ -3,10 +3,10 @@
 import { useFlashcard } from '@/composables/flashcard'
 import { onMounted, onBeforeUnmount, computed } from 'vue'
 
-const { historyRecords, SaveHistoryToLocal } = useFlashcard()
+const { historyRecords, SaveHistorytoLocal } = useFlashcard()
 
 const beforeUnloadHandler = () => {
-  SaveHistoryToLocal()
+  SaveHistorytoLocal()
 }
 onMounted(() => {
   window.addEventListener('beforeunload', beforeUnloadHandler)
@@ -41,7 +41,13 @@ const accuracy = computed(() => {
     </template>
 
     <template #default="{ isActive }">
-      <v-card :title="`History - Accuracy: ${accuracy}`">
+      <v-card>
+        <template #title>
+          <span>
+            <v-icon>mdi-arrow-up</v-icon>
+            History - Accuracy: {{ accuracy }}
+          </span>
+        </template>
         <template #text>
           <v-list>
             <v-list-item
