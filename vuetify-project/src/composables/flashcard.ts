@@ -1,6 +1,6 @@
 // src/composables/flashcard.ts
 import type { Flashcard } from '@/types/Flashcard'
-import { ref, type Ref } from 'vue'
+import { ref, watch, type Ref } from 'vue'
 
 interface HistoryRecord {
   flashcard: Flashcard
@@ -16,9 +16,10 @@ const showAnswer: Ref<boolean> = ref(false)
 const historyRecords: Ref<HistoryRecord[]> = ref([])
 let cardIndex: number = 0
 let isInitialized: boolean = false // use singleton pattern
+const deckCacheKey = 'flashcardDeck'
 
 // Helper function (defined outside useFlashcard as it's a utility function not directly related to component instance)
-const loadImageBySrc = async (src: string, itemName: string): Promise<void> => {
+const LoadImageBySrc = async (src: string, itemName: string): Promise<void> => {
   const response = await fetch(src)
   if (!response.ok) throw new Error(`Failed to load image: ${src}: ${response.statusText}`)
 
@@ -30,8 +31,27 @@ const loadImageBySrc = async (src: string, itemName: string): Promise<void> => {
     throw new Error('Not a jpeg or png image')
   }
 }
+const saveDeckCache = async (decks: Flashcard[]) => {
+  localStorage.setItem(deckCacheKey, JSON.stringify(decks))
+  console.log('Deck cache saved to localStorage.')
+}
+const LoadDeckfromCache = (): Flashcard[] | null => {
+  const cache = localStorage.getItem(deckCacheKey)
+  if (cache) {
+    try {
+      const parsedCache = JSON.parse(cache) as Flashcard[]
+      console.log('Deck cache loaded from localStorage.')
+      return parsedCache
+    } catch (e) {
+      console.error('Error parsing deck cache from localStorage:', e)
+      localStorage.removeItem(deckCacheKey) // Remove invalid cache
+      return null
+    }
+  }
+  return null
+}
 
-const loadDeckfromLocal = async () => {
+const LoadDeckfromLocal = async () => {
   let itemNames: string[] = []
   const photoFolderPath = `${import.meta.env.BASE_URL}photo/`
 
@@ -50,10 +70,12 @@ const loadDeckfromLocal = async () => {
     itemNames = []
   }
 
-  let _ = 0
+  // let _ = 0
   // let total = 0
+  // randomly shuffle itemNames
+  itemNames.sort(() => Math.random() - 0.5)
   for (const itemName of itemNames) {
-    if (_++ === 10) break
+    // if (_++ === 10) break
     if (!currentDeck.value) {
       throw new Error('currentDeck is not initialized when loading images')
     }
@@ -62,7 +84,7 @@ const loadDeckfromLocal = async () => {
     // load itemName.png/jpg
     const imageSrcPng = `${photoFolderPath}${itemName}.png`
     try {
-      await loadImageBySrc(imageSrcPng, itemName)
+      await LoadImageBySrc(imageSrcPng, itemName)
       count++
     } catch (error) {
       // console.error(`Error loading image by src: ${imageSrcPng}`, error)
@@ -70,7 +92,7 @@ const loadDeckfromLocal = async () => {
 
     const imageSrcJpg = `${photoFolderPath}${itemName}.jpg`
     try {
-      await loadImageBySrc(imageSrcJpg, itemName)
+      await LoadImageBySrc(imageSrcJpg, itemName)
       count++
     } catch (error) {
       // console.error(`Error loading image by src: ${imageSrcJpg}`, error)
@@ -83,7 +105,7 @@ const loadDeckfromLocal = async () => {
     while (imageIndex < 10) {
       const imagePngSrc = `${photoFolderPath}${itemName}${imageIndex}.png`
       try {
-        await loadImageBySrc(imagePngSrc, itemName)
+        await LoadImageBySrc(imagePngSrc, itemName)
         count++
       } catch (error) {
         // console.error(`Error loading image ${imagePngSrc} : ${error}`, error)
@@ -92,7 +114,7 @@ const loadDeckfromLocal = async () => {
       }
       const imageJpgSrc = `${photoFolderPath}${itemName}${imageIndex}.jpg`
       try {
-        await loadImageBySrc(imageJpgSrc, itemName)
+        await LoadImageBySrc(imageJpgSrc, itemName)
         count++
       } catch (error) {
         // console.error(`Error loading image ${imageJpgSrc} : ${error}`, error)
@@ -102,33 +124,60 @@ const loadDeckfromLocal = async () => {
       imageIndex++
     }
     console.log(`Loaded ${count} images for ${itemName}`)
+    if (count > 0) loadFinished.value = true
     // total += count
   }
   // console.log(`Loaded ${total} images in total`) // move this into .test
-  loadFinished.value = true
+  saveDeckCache(currentDeck.value)
 }
 
-const loadHistoryFromLocal = () => {
+const LoadHistoryfromLocal = () => {
   const historyString = localStorage.getItem('flashcardHistory')
   if (historyString) {
     historyRecords.value = JSON.parse(historyString)
   }
 }
 
-const SaveHistoryToLocal = () => {
+const SaveHistorytoLocal = () => {
   localStorage.setItem('flashcardHistory', JSON.stringify(historyRecords.value))
 }
 
+const initFlashcard = () => {
+  if (currentDeck.value.length > 0) {
+    const randomIndex = Math.floor(Math.random() * currentDeck.value.length)
+    flashcard.value = currentDeck.value[randomIndex]
+  } else {
+    console.error('currentDeck is empty')
+  }
+}
 // Exported function (composable function that encapsulates flashcard logic)
 export function useFlashcard() {
   if (!isInitialized) {
-    loadHistoryFromLocal()
-    loadDeckfromLocal()
+    LoadHistoryfromLocal()
+    const cachedDeck = LoadDeckfromCache()
+    if (cachedDeck) {
+      currentDeck.value = cachedDeck
+      loadFinished.value = true
+      initFlashcard()
+    } else {
+      LoadDeckfromLocal()
+      watch(
+        loadFinished,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        (newValue, oldValue) => {
+          if (newValue) {
+            initFlashcard()
+          }
+        },
+        { immediate: true }
+      )
+    }
+
     isInitialized = true
   }
 
   // Action functions (defined inside useFlashcard as it manipulates component state)
-  const nextCard = () => {
+  const NextCard = () => {
     // cardIndex = (cardIndex + 1) % currentDeck.value.length
     cardIndex = Math.floor(Math.random() * currentDeck.value.length)
 
@@ -137,7 +186,7 @@ export function useFlashcard() {
     console.log(`nextCard: ${flashcard.value.name} cardIndex: ${cardIndex}`)
   }
 
-  const addHistoryRecord = (isCorrect: boolean) => {
+  const AddHistoryRecord = (isCorrect: boolean) => {
     if (!flashcard.value) return
     const record: HistoryRecord = {
       flashcard: { ...flashcard.value }, // clone the flashcard
@@ -149,26 +198,15 @@ export function useFlashcard() {
       historyRecords.value.shift()
     }
     console.log(`addHistoryRecord: ${record.flashcard.name} isCorrect: ${isCorrect}`)
-    console.log(historyRecords.value)
+    // console.log(historyRecords.value)
   }
 
-  const initFlashcard = async () => {
-    await loadDeckfromLocal()
-    if (currentDeck.value.length > 0) {
-      const randomIndex = Math.floor(Math.random() * currentDeck.value.length)
-      flashcard.value = currentDeck.value[randomIndex]
-    }
+  const handleAnswer = (isCorrect: boolean) => {
+    AddHistoryRecord(isCorrect)
+    NextCard()
   }
-
-  const handleCorrect = () => {
-    addHistoryRecord(true)
-    nextCard()
-  }
-
-  const handleIncorrect = () => {
-    addHistoryRecord(false)
-    nextCard()
-  }
+  const HandleCorrect = () => handleAnswer(true)
+  const HandleIncorrect = () => handleAnswer(false)
 
   return {
     currentDeck,
@@ -176,11 +214,10 @@ export function useFlashcard() {
     flashcard,
     showAnswer,
     historyRecords,
-    LoadDeckfromLocal: loadDeckfromLocal, // Expose for potential testing or direct use - consider if needed
-    LoadHistoryFromLocal: loadHistoryFromLocal, // Expose for potential testing or direct use - consider if needed
-    SaveHistoryToLocal, // Expose for potential testing or direct use - consider if needed
-    initFlashcard,
-    handleCorrect,
-    handleIncorrect
+    LoadDeckfromLocal,
+    LoadHistoryfromLocal,
+    SaveHistorytoLocal,
+    HandleCorrect,
+    HandleIncorrect
   }
 }

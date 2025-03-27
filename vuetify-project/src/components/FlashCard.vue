@@ -4,22 +4,15 @@ import { useFlashcard } from '@/composables/flashcard'
 import { onMounted } from 'vue'
 import History from '@/components/History.vue'
 
-const {
-  currentDeck,
-  loadFinished,
-  flashcard,
-  showAnswer,
-  initFlashcard,
-  handleCorrect,
-  handleIncorrect
-} = useFlashcard()
+const { currentDeck, loadFinished, flashcard, showAnswer, HandleCorrect, HandleIncorrect } =
+  useFlashcard()
 
-onMounted(async () => {
-  await initFlashcard()
-  window.addEventListener('keydown', handleKeyDown)
+onMounted(() => {
+  // initFlashcard()
+  window.addEventListener('keyup', handleKeyUp)
 })
 
-const handleKeyDown = (event: KeyboardEvent) => {
+const handleKeyUp = (event: KeyboardEvent) => {
   if (!loadFinished.value) return
 
   switch (event.key) {
@@ -31,12 +24,12 @@ const handleKeyDown = (event: KeyboardEvent) => {
     case 'a':
     case 'A':
     case 'ArrowLeft':
-      if (showAnswer.value) handleCorrect()
+      if (showAnswer.value) HandleCorrect()
       break
     case 'd':
     case 'D':
     case 'ArrowRight':
-      if (showAnswer.value) handleIncorrect()
+      if (showAnswer.value) HandleIncorrect()
       break
     case 's':
     case 'S':
@@ -76,12 +69,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
     </v-toolbar>
 
     <v-container class="flashcard-actions-bar">
-      <!-- TODO: handle correct and wrong -->
       <v-btn
         class="icon-button"
         color="primary"
         :disabled="!showAnswer"
-        @click="handleCorrect"
+        @click="HandleCorrect"
       >
         <v-icon>mdi-check</v-icon>
       </v-btn>
@@ -90,16 +82,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
         class="icon-button"
         color="error"
         :disabled="!showAnswer"
-        @click="handleIncorrect"
+        @click="HandleIncorrect"
       >
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </v-container>
   </v-container>
-  <div>
-    <!-- <h1>{{ currentDeck2 ? currentDeck2[0].imageSrc : 'loading' }}</h1> -->
-    <!-- <h1>currentDeck.imageSrc[0]: {{ currentDeck.imageSrc[0] }}</h1> -->
-    <!-- <h1>{{ flashcard ?? 'loading' }}</h1> -->
+  <div v-if="!loadFinished">
+    <h1>currentDeck length: {{ currentDeck.length }}</h1>
   </div>
 </template>
 
@@ -140,6 +130,7 @@ body {
 }
 
 .flashcard-title-bar {
+  height: 40px;
   background-color: transparent;
   box-shadow: none;
 }
