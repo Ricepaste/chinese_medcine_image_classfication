@@ -1,9 +1,65 @@
 <script setup lang="ts">
 // src/components/History.vue
 import { useFlashcard } from '@/composables/flashcard'
-import { onMounted, onBeforeUnmount, computed } from 'vue'
+import { onMounted, onBeforeUnmount, computed, ref } from 'vue'
 
 const { historyRecords, SaveHistorytoLocal } = useFlashcard()
+
+const props = defineProps({
+  modelValue: Boolean
+})
+const emit = defineEmits(['update:modelValue'])
+
+const dialog = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+})
+
+const sortState = ref<'all' | 'correctFirst' | 'incorrectFirst'>('all')
+const sortedHistory = computed(() => {
+  const records = [...historyRecords.value].reverse()
+  switch (sortState.value) {
+    case 'all':
+      break
+    case 'correctFirst':
+      records.sort((a, b) => {
+        if (a.isCorrect && !b.isCorrect) {
+          return -1
+        } else if (!a.isCorrect && b.isCorrect) {
+          return 1
+        } else {
+          return 0
+        }
+      })
+      break
+    case 'incorrectFirst':
+      records.sort((a, b) => {
+        if (!a.isCorrect && b.isCorrect) {
+          return -1
+        } else if (a.isCorrect && !b.isCorrect) {
+          return 1
+        } else {
+          return 0
+        }
+      })
+      break
+  }
+  return records
+})
+
+const toggleSortState = () => {
+  switch (sortState.value) {
+    case 'all':
+      sortState.value = 'correctFirst'
+      break
+    case 'correctFirst':
+      sortState.value = 'incorrectFirst'
+      break
+    case 'incorrectFirst':
+      sortState.value = 'all'
+      break
+  }
+}
 
 const beforeUnloadHandler = () => {
   SaveHistorytoLocal()
@@ -28,7 +84,10 @@ const accuracy = computed(() => {
 })
 </script>
 <template>
-  <v-dialog max-width="700">
+  <v-dialog
+    v-model="dialog"
+    max-width="700"
+  >
     <template #activator="{ props: activatorProps }">
       <div
         v-bind="activatorProps"
@@ -40,18 +99,34 @@ const accuracy = computed(() => {
       </div>
     </template>
 
-    <template #default="{ isActive }">
+    <!-- #default="{ isActive }" -->
+    <template #default="">
       <v-card>
         <template #title>
           <span>
-            <v-icon>mdi-arrow-up</v-icon>
-            History - Accuracy: {{ accuracy }}
+            <v-icon
+              :style="{
+                cursor: 'pointer',
+                color:
+                  sortState === 'all' ? 'white' : sortState === 'correctFirst' ? 'green' : 'red'
+              }"
+              @click="toggleSortState"
+            >
+              {{
+                sortState === 'all'
+                  ? 'mdi-filter-outline'
+                  : sortState === 'correctFirst'
+                    ? 'mdi-filter-check'
+                    : 'mdi-filter-off-outline'
+              }}</v-icon
+            >
+            History {{ sortState.toUpperCase() }}- Accuracy: {{ accuracy }}
           </span>
         </template>
         <template #text>
           <v-list>
             <v-list-item
-              v-for="(record, index) in [...historyRecords].reverse()"
+              v-for="(record, index) in sortedHistory"
               :key="index"
             >
               <v-list-item-title
@@ -71,7 +146,7 @@ const accuracy = computed(() => {
           <v-spacer></v-spacer>
           <v-btn
             color="primary"
-            @click="isActive.value = false"
+            @click="dialog = false"
             >Close</v-btn
           >
         </v-card-actions>

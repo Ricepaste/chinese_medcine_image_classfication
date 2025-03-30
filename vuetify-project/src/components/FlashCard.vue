@@ -1,10 +1,11 @@
 <script setup lang="ts">
 // src/components/FlashCard.vue
 import { useFlashcard } from '@/composables/flashcard'
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import History from '@/components/History.vue'
 
 const { loadFinished, flashcard, showAnswer, HandleCorrect, HandleIncorrect } = useFlashcard()
+const historyDialog = ref(false) // Declare historyDialog as a reactive property
 
 onMounted(() => {
   // initFlashcard()
@@ -33,8 +34,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
     case 's':
     case 'S':
     case 'ArrowDown':
-      console.log('History button pressed')
-      // TODO: Handle History button press
+      historyDialog.value = !historyDialog.value // Open history dialog
       break
   }
 }
@@ -76,7 +76,10 @@ const handleKeyUp = (event: KeyboardEvent) => {
       >
         <v-icon>mdi-check</v-icon>
       </v-btn>
-      <History :disabled="!loadFinished" />
+      <History
+        v-model="historyDialog"
+        :disabled="!loadFinished"
+      />
       <v-btn
         class="icon-button"
         color="error"
