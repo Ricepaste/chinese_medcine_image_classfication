@@ -1,4 +1,5 @@
 // src/composables/flashcard.ts
+import { loadStateFromLocalUtil } from '@/utils/localStorageUtils'
 import type { Flashcard } from '@/types/Flashcard'
 import { ref, watch, type Ref } from 'vue'
 
@@ -17,6 +18,7 @@ const historyRecords: Ref<HistoryRecord[]> = ref([])
 let cardIndex: number = 0
 let isInitialized: boolean = false // use singleton pattern
 const deckCacheKey = 'flashcardDeck'
+const historyCacheKey = 'flashcardHistory'
 
 // Helper function (defined outside useFlashcard as it's a utility function not directly related to component instance)
 const LoadImageBySrc = async (src: string, itemName: string): Promise<void> => {
@@ -36,19 +38,7 @@ const saveDeckCache = async (decks: Flashcard[]) => {
   console.log('Deck cache saved to localStorage.')
 }
 const LoadDeckfromCache = (): Flashcard[] | null => {
-  const cache = localStorage.getItem(deckCacheKey)
-  if (cache) {
-    try {
-      const parsedCache = JSON.parse(cache) as Flashcard[]
-      console.log('Deck cache loaded from localStorage.')
-      return parsedCache
-    } catch (e) {
-      console.error('Error parsing deck cache from localStorage:', e)
-      localStorage.removeItem(deckCacheKey) // Remove invalid cache
-      return null
-    }
-  }
-  return null
+  return loadStateFromLocalUtil<Flashcard[]>(deckCacheKey)
 }
 
 const LoadDeckfromLocal = async () => {
@@ -129,14 +119,11 @@ const LoadDeckfromLocal = async () => {
 }
 
 const LoadHistoryfromLocal = () => {
-  const historyString = localStorage.getItem('flashcardHistory')
-  if (historyString) {
-    historyRecords.value = JSON.parse(historyString)
-  }
+  historyRecords.value = loadStateFromLocalUtil<HistoryRecord[]>(historyCacheKey) ?? []
 }
 
 const SaveHistorytoLocal = () => {
-  localStorage.setItem('flashcardHistory', JSON.stringify(historyRecords.value))
+  localStorage.setItem(historyCacheKey, JSON.stringify(historyRecords.value))
 }
 
 const initFlashcard = () => {
