@@ -2,7 +2,7 @@
 import { loadStateFromLocalUtil } from '@/utils/localStorageUtils'
 import type { Flashcard } from '@/types/Flashcard'
 import { ref, watch, type Ref } from 'vue'
-
+import { useElo } from './elo'
 interface HistoryRecord {
   flashcard: Flashcard
   isCorrect: boolean
@@ -136,12 +136,17 @@ const initFlashcard = () => {
 }
 // Exported function (composable function that encapsulates flashcard logic)
 export function useFlashcard() {
+  const { getCompetitor, updateRatings, loadEloStateFromLocal, loadEloHistoryFromLocal } = useElo()
   if (!isInitialized) {
     LoadHistoryfromLocal()
     const cachedDeck = LoadDeckfromCache()
     if (cachedDeck) {
       currentDeck.value = cachedDeck
       loadFinished.value = true
+
+      loadEloStateFromLocal()
+      loadEloHistoryFromLocal()
+
       initFlashcard()
     } else {
       LoadDeckfromLocal()
@@ -187,6 +192,13 @@ export function useFlashcard() {
 
   const handleAnswer = (isCorrect: boolean) => {
     AddHistoryRecord(isCorrect)
+
+    updateRatings(
+      getCompetitor('user', 'user').id,
+      getCompetitor(flashcard.value.imageSrc, 'flashcard').id,
+      isCorrect
+    )
+
     NextCard()
   }
   const HandleCorrect = () => handleAnswer(true)
