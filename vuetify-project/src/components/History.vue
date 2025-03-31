@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // src/components/History.vue
-import { useFlashcard } from '@/composables/flashcard'
 import { onMounted, onBeforeUnmount, computed, ref } from 'vue'
+import { useFlashcard } from '@/composables/flashcard'
+import { useElo } from '@/composables/elo'
 
 const { historyRecords, SaveHistorytoLocal } = useFlashcard()
+const { eloHistory, saveEloHistoryToLocal, saveEloStateToLocal } = useElo()
 
 const props = defineProps({
   modelValue: Boolean
@@ -46,6 +48,9 @@ const sortedHistory = computed(() => {
   }
   return records
 })
+const eloHistoryRecords = computed(() => {
+  return [...eloHistory.value].reverse()
+})
 
 const toggleSortState = () => {
   switch (sortState.value) {
@@ -63,6 +68,8 @@ const toggleSortState = () => {
 
 const beforeUnloadHandler = () => {
   SaveHistorytoLocal()
+  saveEloHistoryToLocal()
+  saveEloStateToLocal()
 }
 onMounted(() => {
   window.addEventListener('beforeunload', beforeUnloadHandler)
@@ -124,23 +131,44 @@ const accuracy = computed(() => {
           </span>
         </template>
         <template #text>
-          <v-list>
-            <v-list-item
-              v-for="(record, index) in sortedHistory"
-              :key="index"
-            >
-              <v-list-item-title
-                ><span :style="{ color: record.isCorrect ? 'green' : 'red' }">
-                  {{ record.isCorrect ? '答對' : '答錯' }}
-                </span>
-                - {{ record.flashcard.name }} -
-                {{ new Date(record.timestamp).toLocaleString() }}</v-list-item-title
+          <div class="d-flex justify-center">
+            <v-list>
+              <v-list-item
+                v-for="(record, index) in sortedHistory"
+                :key="index"
               >
-              <v-list-item-subtitle>
-                {{ record.flashcard.imageSrc }}
-              </v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
+                <v-list-item-title
+                  ><span :style="{ color: record.isCorrect ? 'green' : 'red' }">
+                    {{ record.isCorrect ? '答對' : '答錯' }}
+                  </span>
+                  - {{ record.flashcard.name }} -
+                  {{ new Date(record.timestamp).toLocaleString() }}</v-list-item-title
+                >
+                <v-list-item-subtitle>
+                  {{ record.flashcard.imageSrc }}
+                </v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+
+            <v-list>
+              <v-list-item
+                v-for="(record, index) in eloHistoryRecords"
+                :key="index"
+              >
+                <v-list-item-title
+                  ><span :style="{ color: record.isCorrect ? 'green' : 'red' }">
+                    {{ record.isCorrect ? '答對' : '答錯' }}
+                  </span>
+                  - {{ record.userRatingBefore }} -> {{ record.userRatingAfter }} -
+                  {{ new Date(record.timestamp).toLocaleString() }}</v-list-item-title
+                >
+                <v-list-item-subtitle>
+                  {{ record.flashcardId }} - {{ record.flashcardRatingBefore }} ->
+                  {{ record.flashcardRatingAfter }}
+                </v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+          </div>
         </template>
         <v-card-actions>
           <v-spacer></v-spacer>
