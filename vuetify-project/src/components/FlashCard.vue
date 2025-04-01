@@ -8,7 +8,6 @@ const { loadFinished, flashcard, showAnswer, HandleCorrect, HandleIncorrect } = 
 const historyDialog = ref(false) // Declare historyDialog as a reactive property
 
 onMounted(() => {
-  // initFlashcard()
   window.addEventListener('keyup', handleKeyUp)
 })
 
@@ -19,22 +18,26 @@ const handleKeyUp = (event: KeyboardEvent) => {
     case 'w':
     case 'W':
     case 'ArrowUp':
+      if (historyDialog.value) return
+      // TODO: Toggle sort state if history dialog is open
       showAnswer.value = true
       break
     case 'a':
     case 'A':
     case 'ArrowLeft':
+      if (historyDialog.value) return
       if (showAnswer.value) HandleCorrect()
       break
     case 'd':
     case 'D':
     case 'ArrowRight':
+      if (historyDialog.value) return
       if (showAnswer.value) HandleIncorrect()
       break
     case 's':
     case 'S':
     case 'ArrowDown':
-      historyDialog.value = !historyDialog.value // Open history dialog
+      historyDialog.value = !historyDialog.value // Toggle history dialog
       break
   }
 }
@@ -62,8 +65,10 @@ const handleKeyUp = (event: KeyboardEvent) => {
       class="flashcard-title-bar"
     >
       <v-toolbar-title class="flashcard-title">
-        <span v-if="showAnswer">{{ flashcard.name }}</span>
-        <span v-else>???</span>
+        <transition mode="out-in">
+          <span v-if="showAnswer">{{ flashcard.name }}</span>
+          <span v-else>???</span>
+        </transition>
       </v-toolbar-title>
     </v-toolbar>
 
@@ -169,5 +174,15 @@ body {
 }
 .icon-button[disabled] {
   opacity: 0.5; /* 或您想要的任何禁用樣式 */
+}
+/* transistion settings */
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.1s;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0.1;
 }
 </style>

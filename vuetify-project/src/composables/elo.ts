@@ -1,5 +1,5 @@
 // src/composables/elo.ts
-
+// TODO: implement better elo ranking specifically for flashcards
 import { loadStateFromLocalUtil } from '@/utils/localStorageUtils'
 import { ref, type Ref } from 'vue'
 
@@ -159,10 +159,7 @@ export function useElo() {
     }
     eloHistory.value.push(historyRecord)
     if (eloHistory.value.length > 100) eloHistory.value.shift() //keep history record within 100 records
-    console.log('eloHistory:', eloHistory)
-
-    // saveEloStateToLocal() // been moved to History.vue
-    // saveEloHistoryToLocal() // been moved to History.vue
+    // console.log('eloHistory:', eloHistory)
   }
 
   return {
