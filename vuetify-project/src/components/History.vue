@@ -1,10 +1,8 @@
 <script setup lang="ts">
 // src/components/History.vue
 import { onMounted, onBeforeUnmount, computed, ref } from 'vue'
-import { useFlashcard } from '@/composables/flashcard'
 import { useElo } from '@/composables/elo'
 
-const { historyRecords, SaveHistorytoLocal } = useFlashcard()
 const { eloHistory, saveEloHistoryToLocal, saveEloStateToLocal } = useElo()
 
 const props = defineProps({
@@ -19,7 +17,7 @@ const dialog = computed({
 
 const sortState = ref<'all' | 'correctFirst' | 'incorrectFirst'>('all')
 const sortedHistory = computed(() => {
-  const records = [...historyRecords.value].reverse()
+  const records = [...eloHistory.value].reverse()
   switch (sortState.value) {
     case 'all':
       break
@@ -48,9 +46,6 @@ const sortedHistory = computed(() => {
   }
   return records
 })
-const eloHistoryRecords = computed(() => {
-  return [...eloHistory.value].reverse()
-})
 
 const toggleSortState = () => {
   switch (sortState.value) {
@@ -67,7 +62,6 @@ const toggleSortState = () => {
 }
 
 const beforeUnloadHandler = () => {
-  SaveHistorytoLocal()
   saveEloHistoryToLocal()
   saveEloStateToLocal()
 }
@@ -80,14 +74,13 @@ onBeforeUnmount(() => {
 
 const showHistory = () => {
   console.log('showHistory')
-  console.log(historyRecords)
 }
 
 const accuracy = computed(() => {
-  if (historyRecords.value.length === 0) return '0%'
-  const correctCount = historyRecords.value.filter((record) => record.isCorrect).length
-  const accuracyRate = (correctCount / historyRecords.value.length) * 100
-  return `${accuracyRate.toFixed(0)}% (${correctCount}/${historyRecords.value.length})`
+  if (eloHistory.value.length === 0) return '0%'
+  const correctCount = eloHistory.value.filter((record) => record.isCorrect).length
+  const accuracyRate = (correctCount / eloHistory.value.length) * 100
+  return `${accuracyRate.toFixed(0)}% (${correctCount}/${eloHistory.value.length})`
 })
 </script>
 <template>
@@ -130,46 +123,27 @@ const accuracy = computed(() => {
             History {{ sortState.toUpperCase() }}- Accuracy: {{ accuracy }}
           </span>
         </template>
-        <template #text>
-          <div class="d-flex justify-center">
-            <v-list>
-              <v-list-item
-                v-for="(record, index) in sortedHistory"
-                :key="index"
+        <v-card-text class="p-0">
+          <v-list>
+            <v-list-item
+              v-for="(record, index) in sortedHistory"
+              :key="index"
+            >
+              <v-divider v-if="index % 5 === 0 && index !== 0" />
+              <v-list-item-title
+                ><span :style="{ color: record.isCorrect ? 'green' : 'red' }">
+                  {{ record.isCorrect ? '答對' : '答錯' }}
+                </span>
+                - {{ record.userRatingBefore }} -> {{ record.userRatingAfter }} -
+                {{ new Date(record.timestamp).toLocaleString() }}</v-list-item-title
               >
-                <v-list-item-title
-                  ><span :style="{ color: record.isCorrect ? 'green' : 'red' }">
-                    {{ record.isCorrect ? '答對' : '答錯' }}
-                  </span>
-                  - {{ record.flashcard.name }} -
-                  {{ new Date(record.timestamp).toLocaleString() }}</v-list-item-title
-                >
-                <v-list-item-subtitle>
-                  {{ record.flashcard.imageSrc }}
-                </v-list-item-subtitle>
-              </v-list-item>
-            </v-list>
-
-            <v-list>
-              <v-list-item
-                v-for="(record, index) in eloHistoryRecords"
-                :key="index"
-              >
-                <v-list-item-title
-                  ><span :style="{ color: record.isCorrect ? 'green' : 'red' }">
-                    {{ record.isCorrect ? '答對' : '答錯' }}
-                  </span>
-                  - {{ record.userRatingBefore }} -> {{ record.userRatingAfter }} -
-                  {{ new Date(record.timestamp).toLocaleString() }}</v-list-item-title
-                >
-                <v-list-item-subtitle>
-                  {{ record.flashcardId }} - {{ record.flashcardRatingBefore }} ->
-                  {{ record.flashcardRatingAfter }}
-                </v-list-item-subtitle>
-              </v-list-item>
-            </v-list>
-          </div>
-        </template>
+              <v-list-item-subtitle>
+                {{ record.flashcardId }} - {{ record.flashcardRatingBefore }} ->
+                {{ record.flashcardRatingAfter }}
+              </v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn

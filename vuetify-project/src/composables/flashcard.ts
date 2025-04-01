@@ -3,22 +3,15 @@ import { loadStateFromLocalUtil } from '@/utils/localStorageUtils'
 import type { Flashcard } from '@/types/Flashcard'
 import { ref, watch, type Ref } from 'vue'
 import { useElo } from './elo'
-interface HistoryRecord {
-  flashcard: Flashcard
-  isCorrect: boolean
-  timestamp: number
-}
 
 // State variables (Singleton instances, defined outside useFlashcard for shared state)
 const currentDeck: Ref<Flashcard[]> = ref([])
 const loadFinished: Ref<boolean> = ref(false)
 const flashcard: Ref<Flashcard> = ref({ imageSrc: '', name: '' })
 const showAnswer: Ref<boolean> = ref(false)
-const historyRecords: Ref<HistoryRecord[]> = ref([])
 let cardIndex: number = 0
 let isInitialized: boolean = false // use singleton pattern
 const deckCacheKey = 'flashcardDeck'
-const historyCacheKey = 'flashcardHistory'
 
 // Helper function (defined outside useFlashcard as it's a utility function not directly related to component instance)
 const LoadImageBySrc = async (src: string, itemName: string): Promise<void> => {
@@ -35,7 +28,7 @@ const LoadImageBySrc = async (src: string, itemName: string): Promise<void> => {
 }
 const saveDeckCache = async (decks: Flashcard[]) => {
   localStorage.setItem(deckCacheKey, JSON.stringify(decks))
-  console.log('Deck cache saved to localStorage.')
+  // console.log('Deck cache saved to localStorage.')
 }
 const LoadDeckfromCache = (): Flashcard[] | null => {
   return loadStateFromLocalUtil<Flashcard[]>(deckCacheKey)
@@ -56,7 +49,7 @@ const LoadDeckfromLocal = async () => {
     }
     itemNames = config.itemNames
   } catch (error) {
-    // console.error('Error loading or parsing deck-config.json', error)
+    console.error('Error loading or parsing deck-config.json', error)
     itemNames = []
   }
   // let total = 0
@@ -118,14 +111,6 @@ const LoadDeckfromLocal = async () => {
   saveDeckCache(currentDeck.value)
 }
 
-const LoadHistoryfromLocal = () => {
-  historyRecords.value = loadStateFromLocalUtil<HistoryRecord[]>(historyCacheKey) ?? []
-}
-
-const SaveHistorytoLocal = () => {
-  localStorage.setItem(historyCacheKey, JSON.stringify(historyRecords.value))
-}
-
 const initFlashcard = () => {
   if (currentDeck.value.length > 0) {
     const randomIndex = Math.floor(Math.random() * currentDeck.value.length)
@@ -138,7 +123,6 @@ const initFlashcard = () => {
 export function useFlashcard() {
   const { getCompetitor, updateRatings, loadEloStateFromLocal, loadEloHistoryFromLocal } = useElo()
   if (!isInitialized) {
-    LoadHistoryfromLocal()
     const cachedDeck = LoadDeckfromCache()
     if (cachedDeck) {
       currentDeck.value = cachedDeck
@@ -175,24 +159,7 @@ export function useFlashcard() {
     console.log(`nextCard: ${flashcard.value.name} cardIndex: ${cardIndex}`)
   }
 
-  const AddHistoryRecord = (isCorrect: boolean) => {
-    if (!flashcard.value) return
-    const record: HistoryRecord = {
-      flashcard: { ...flashcard.value }, // clone the flashcard
-      isCorrect,
-      timestamp: Date.now()
-    }
-    historyRecords.value.push(record)
-    if (historyRecords.value.length > 100) {
-      historyRecords.value.shift()
-    }
-    console.log(`addHistoryRecord: ${record.flashcard.name} isCorrect: ${isCorrect}`)
-    // console.log(historyRecords.value)
-  }
-
   const handleAnswer = (isCorrect: boolean) => {
-    AddHistoryRecord(isCorrect)
-
     updateRatings(
       getCompetitor('user', 'user').id,
       getCompetitor(flashcard.value.imageSrc, 'flashcard').id,
@@ -209,10 +176,7 @@ export function useFlashcard() {
     loadFinished,
     flashcard,
     showAnswer,
-    historyRecords,
     LoadDeckfromLocal,
-    LoadHistoryfromLocal,
-    SaveHistorytoLocal,
     HandleCorrect,
     HandleIncorrect
   }
