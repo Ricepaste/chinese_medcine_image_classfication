@@ -1,10 +1,10 @@
 // src/composables/elo.ts
-// TODO: implement better elo ranking specifically for flashcards
+
 import { loadStateFromLocalUtil } from '@/utils/localStorageUtils'
 import { ref, type Ref } from 'vue'
 
-const defaultKFactorUser = 32
-const defaultKFactorFlashcard = 24
+const defaultKFactorUser = 24
+const defaultKFactorFlashcard = 32
 const initialRating = 1500
 
 let isInitialized: boolean = false
@@ -52,11 +52,10 @@ const updateEloRatingUtil = (
 }
 
 const getOrCreateCompetitorUtil = (
-  competitors: Map<string, Competitor>,
   competitorId: string,
   competitorType: 'user' | 'flashcard'
 ): Competitor => {
-  let competitor = competitors.get(competitorId)
+  let competitor = competitors.value.get(competitorId)
   if (!competitor) {
     const kFactor = competitorType === 'user' ? defaultKFactorUser : defaultKFactorFlashcard
     competitor = {
@@ -64,24 +63,13 @@ const getOrCreateCompetitorUtil = (
       rating: initialRating,
       kFactor: kFactor
     }
-    competitors.set(competitorId, competitor)
+    competitors.value.set(competitorId, competitor)
   }
   return competitor
 }
 
 const loadEloStateFromLocal = () => {
   competitors.value = new Map(loadStateFromLocalUtil<Map<string, Competitor>>(eloStateKey) ?? [])
-  // const storedState = localStorage.getItem(eloStateKey)
-  // if (storedState) {
-  //   try {
-  //     const parsedState = JSON.parse(storedState) as [string, Competitor][] //local storage return string
-  //     competitors.value = new Map(parsedState)
-  //     console.log('Elo state loaded from localStorage.')
-  //   } catch (e) {
-  //     console.error('Error parsing elo state from localStorage:', e)
-  //     localStorage.removeItem(eloStateKey) // Remove invalid cache
-  //   }
-  // }
 }
 
 const saveEloStateToLocal = () => {
@@ -91,34 +79,20 @@ const saveEloStateToLocal = () => {
 
 const loadEloHistoryFromLocal = () => {
   eloHistory.value = loadStateFromLocalUtil<EloHistoryRecord[]>(eloHistoryKey) ?? []
-  // const storedState = localStorage.getItem(eloHistoryKey)
-  // if (storedState) {
-  //   try {
-  //     const parsedState = JSON.parse(storedState) as EloHistoryRecord[]
-  //     historyRecords.value = parsedState
-  //     console.log('Elo history loaded from localStorage.')
-  //   } catch (e) {
-  //     console.error('Error parsing elo history from localStorage:', e)
-  //     localStorage.removeItem(eloHistoryKey) // Remove invalid cache
-  //   }
-  // }
 }
 const saveEloHistoryToLocal = () => {
   localStorage.setItem(eloHistoryKey, JSON.stringify(eloHistory.value))
   console.log('Elo history saved to localStorage.')
 }
+const getCompetitor = (competitorId: string, competitorType: 'user' | 'flashcard'): Competitor => {
+  return getOrCreateCompetitorUtil(competitorId, competitorType)
+}
+
 export function useElo() {
   if (!isInitialized) {
     loadEloStateFromLocal()
     loadEloHistoryFromLocal()
     isInitialized = true
-  }
-
-  const getCompetitor = (
-    competitorId: string,
-    competitorType: 'user' | 'flashcard'
-  ): Competitor => {
-    return getOrCreateCompetitorUtil(competitors.value, competitorId, competitorType)
   }
 
   const updateRatings = (
@@ -145,6 +119,7 @@ export function useElo() {
 
     userCompetitor.rating = updatedUserRating
     flashcardCompetitor.rating = updatedFlashcardRating
+
     competitors.value.set(userCompetitorId, userCompetitor) // important to update value in map
     competitors.value.set(flashcardCompetitorId, flashcardCompetitor) // important to update value in map
 
@@ -161,15 +136,21 @@ export function useElo() {
     if (eloHistory.value.length > 100) eloHistory.value.shift() //keep history record within 100 records
     // console.log('eloHistory:', eloHistory)
   }
+  const getProbabilityByElo = (flashcardRating: number): number => {
+    const userRating = getCompetitor('user', 'user').rating
+    const probability = Math.exp((flashcardRating - userRating) / 400)
+    return probability / (1 + probability)
+  }
 
   return {
     competitors,
     eloHistory,
+    updateRatings,
+    getCompetitor,
+    getProbabilityByElo,
     loadEloStateFromLocal,
     saveEloStateToLocal,
     loadEloHistoryFromLocal,
-    saveEloHistoryToLocal,
-    getCompetitor,
-    updateRatings
+    saveEloHistoryToLocal
   }
 }
