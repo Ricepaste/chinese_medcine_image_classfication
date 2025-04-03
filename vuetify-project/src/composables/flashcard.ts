@@ -166,14 +166,16 @@ export function useFlashcard() {
       card = currentDeck.value[cardIndex]
       const flashcardRating = getCompetitor(card.imageSrc, 'flashcard').rating
       if (flashcardRating === 1500) {
-        console.log(`Picked unseen`)
+        // console.log(`Picked unseen`)
         break // Pick it if the rating is 1500 (not initialized)
       }
       const prob = getProbabilityByElo(flashcardRating)
       if (Math.random() < prob) {
-        console.log(`Picked rating: ${flashcardRating} prob: ${prob}`)
+        // console.log(`Picked rating: ${flashcardRating} prob: ${prob}`)
         break // Pick it if the probability is high enough
-      } else console.log(`Not picked rating: ${flashcardRating} prob: ${prob}`)
+      } else {
+        // console.log(`Not picked rating: ${flashcardRating} prob: ${prob}`)
+      }
     }
     flashcard.value = card
 
@@ -187,7 +189,6 @@ export function useFlashcard() {
       getCompetitor(flashcard.value.imageSrc, 'flashcard').id,
       isCorrect
     )
-    // saveEloStateToLocal()
 
     nextCard()
   }

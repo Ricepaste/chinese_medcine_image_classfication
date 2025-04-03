@@ -12,8 +12,6 @@ let isInitialized: boolean = false
 const competitors: Ref<Map<string, Competitor>> = ref(new Map())
 const eloHistory: Ref<EloHistoryRecord[]> = ref([])
 
-const sortedCompetitors: Ref<string[]> = ref([]) // contains competitor.id sorted by rating
-
 const eloStateKey = 'eloState'
 const eloHistoryKey = 'eloHistory'
 
@@ -70,68 +68,6 @@ const getOrCreateCompetitorUtil = (
   return competitor
 }
 
-const initializeSortedCompetitors = (competitorsMap: Map<string, Competitor>) => {
-  const flashcardCompetitors: Competitor[] = []
-  competitorsMap.forEach((competitor) => {
-    // if (competitor.id !== 'user') {
-    flashcardCompetitors.push(competitor)
-    // }
-  })
-  flashcardCompetitors.sort((a, b) => a.rating - b.rating)
-  sortedCompetitors.value = flashcardCompetitors.map((competitor) => competitor.id)
-  console.log('initializeSortedCompetitors', sortedCompetitors.value)
-}
-
-const updateSortedFlashcardRatings = (flashcardId: string, newRating: number) => {
-  const currentRatings = sortedCompetitors.value
-  // try to retrieve the old index after randomly pick one
-  const flashcardIndex = currentRatings.findIndex((id) => id === flashcardId)
-
-  if (flashcardIndex !== -1) {
-    currentRatings.splice(flashcardIndex, 1) // Remove old position
-  }
-
-  // Find the correct position using binary search
-  let insertIndex = currentRatings.findIndex((id) => competitors.value.get(id)!.rating < newRating)
-  if (insertIndex === -1) {
-    insertIndex = currentRatings.length // Insert at the end if no lower rating is found
-  }
-
-  currentRatings.splice(insertIndex, 0, flashcardId) // Insert at new position
-}
-
-const getUserRank = (userRating: number) => {
-  const currentRatings = sortedCompetitors.value
-  const userRank = currentRatings.findIndex((id) => competitors.value.get(id)!.rating >= userRating)
-  console.log(`userRank: ${userRank}, userRating: ${userRating}`) // Debugging line
-  if (userRank === -1) {
-    return currentRatings.length // User is the lowest ranked
-  }
-  return userRank
-}
-const getFlashcardInUserRatingRange = (userRating: number, rangePercentage: number) => {
-  // if (sortedFlashcardRatings.value.length === 0) return []
-
-  const userRank = getUserRank(userRating)
-  // console.log(`userRank: ${userRank}, userRating: ${userRating}`) // Debugging line
-
-  const deckSize = sortedCompetitors.value.length
-  let startIndex = Math.max(0, Math.floor(userRank - deckSize * rangePercentage))
-  let endIndex = Math.min(deckSize, Math.ceil(userRank + deckSize * rangePercentage))
-
-  if (userRank < deckSize * rangePercentage) {
-    endIndex = Math.min(deckSize, Math.ceil(deckSize * rangePercentage * 2)) // 0-20% if user rank is low
-  }
-  if (userRank > deckSize * (1 - rangePercentage)) {
-    startIndex = Math.max(0, Math.floor(deckSize * (1 - rangePercentage * 2))) // 80-100% if user rank is high
-  }
-
-  const sampleRange = sortedCompetitors.value.slice(startIndex, endIndex)
-  // console.log(
-  //   `userRank: ${userRank}, startIndex: ${startIndex}, endIndex: ${endIndex}, sampleRange: ${JSON.stringify(sampleRange)}`
-  // )
-  return sampleRange
-}
 const loadEloStateFromLocal = () => {
   competitors.value = new Map(loadStateFromLocalUtil<Map<string, Competitor>>(eloStateKey) ?? [])
 }
@@ -185,7 +121,6 @@ export function useElo() {
     flashcardCompetitor.rating = updatedFlashcardRating
 
     competitors.value.set(userCompetitorId, userCompetitor) // important to update value in map
-    updateSortedFlashcardRatings(flashcardCompetitorId, updatedFlashcardRating)
     competitors.value.set(flashcardCompetitorId, flashcardCompetitor) // important to update value in map
 
     const historyRecord: EloHistoryRecord = {
