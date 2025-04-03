@@ -121,7 +121,14 @@ const initFlashcard = () => {
 }
 // Exported function (composable function that encapsulates flashcard logic)
 export function useFlashcard() {
-  const { getCompetitor, updateRatings, loadEloStateFromLocal, loadEloHistoryFromLocal } = useElo()
+  const {
+    getCompetitor,
+    getProbabilityByElo,
+    updateRatings,
+    saveEloStateToLocal,
+    loadEloStateFromLocal,
+    loadEloHistoryFromLocal
+  } = useElo()
   if (!isInitialized) {
     const cachedDeck = LoadDeckfromCache()
     if (cachedDeck) {
@@ -150,13 +157,28 @@ export function useFlashcard() {
   }
 
   // Action functions (defined inside useFlashcard as it manipulates component state)
-  const NextCard = () => {
-    // cardIndex = (cardIndex + 1) % currentDeck.value.length
-    cardIndex = Math.floor(Math.random() * currentDeck.value.length)
+  const nextCard = () => {
+    let card: Flashcard = { imageSrc: '', name: '' }
+    let _ = 0
+    while (_ < 10) {
+      _++
+      cardIndex = Math.floor(Math.random() * currentDeck.value.length)
+      card = currentDeck.value[cardIndex]
+      const flashcardRating = getCompetitor(card.imageSrc, 'flashcard').rating
+      if (flashcardRating === 1500) {
+        console.log(`Picked unseen`)
+        break // Pick it if the rating is 1500 (not initialized)
+      }
+      const prob = getProbabilityByElo(flashcardRating)
+      if (Math.random() < prob) {
+        console.log(`Picked rating: ${flashcardRating} prob: ${prob}`)
+        break // Pick it if the probability is high enough
+      } else console.log(`Not picked rating: ${flashcardRating} prob: ${prob}`)
+    }
+    flashcard.value = card
 
-    flashcard.value = currentDeck.value[cardIndex] ?? { imageSrc: '', name: '' }
     showAnswer.value = false // Reset showAnswer to false
-    console.log(`nextCard: ${flashcard.value.name} cardIndex: ${cardIndex}`)
+    // console.log(`nextCard: ${flashcard.value.name} cardIndex: ${cardIndex}`)
   }
 
   const handleAnswer = (isCorrect: boolean) => {
@@ -165,8 +187,9 @@ export function useFlashcard() {
       getCompetitor(flashcard.value.imageSrc, 'flashcard').id,
       isCorrect
     )
+    // saveEloStateToLocal()
 
-    NextCard()
+    nextCard()
   }
   const HandleCorrect = () => handleAnswer(true)
   const HandleIncorrect = () => handleAnswer(false)
