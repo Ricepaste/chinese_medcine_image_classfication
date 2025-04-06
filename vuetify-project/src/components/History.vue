@@ -101,7 +101,7 @@ const accuracy = computed(() => {
 
     <!-- #default="{ isActive }" -->
     <template #default="">
-      <v-card>
+      <v-card class="pa-4">
         <template #title>
           <span>
             <v-icon
@@ -116,15 +116,15 @@ const accuracy = computed(() => {
                 sortState === 'all'
                   ? 'mdi-filter-outline'
                   : sortState === 'correctFirst'
-                    ? 'mdi-filter-check'
+                    ? 'mdi-filter-check-outline'
                     : 'mdi-filter-off-outline'
               }}</v-icon
             >
             History {{ sortState.toUpperCase() }}- Accuracy: {{ accuracy }}
           </span>
         </template>
-        <v-card-text class="p-0">
-          <v-list>
+        <v-card-text class="ps-2 pe-2">
+          <v-list :max-height="'600'">
             <v-list-item
               v-for="(record, index) in sortedHistory"
               :key="index"
@@ -134,12 +134,12 @@ const accuracy = computed(() => {
                 ><span :style="{ color: record.isCorrect ? 'green' : 'red' }">
                   {{ record.isCorrect ? '答對' : '答錯' }}
                 </span>
-                - {{ record.userRatingBefore }} -> {{ record.userRatingAfter }} -
-                {{ new Date(record.timestamp).toLocaleString() }}</v-list-item-title
-              >
-              <v-list-item-subtitle>
+                - {{ record.userRatingBefore }} -> {{ record.userRatingAfter }}
+              </v-list-item-title>
+              <v-list-item-subtitle style="display: inline-block">
                 {{ record.flashcardId }} - {{ record.flashcardRatingBefore }} ->
-                {{ record.flashcardRatingAfter }}
+                {{ record.flashcardRatingAfter }} -
+                {{ new Date(record.timestamp).toLocaleString() }}
               </v-list-item-subtitle>
             </v-list-item>
           </v-list>
@@ -156,12 +156,13 @@ const accuracy = computed(() => {
     </template>
   </v-dialog>
 </template>
+
 <style scoped>
 .history_icon {
   font-size: 1.5rem;
   line-height: 2rem;
   cursor: pointer;
   align-items: center;
-  padding: 0px 1rem 0px 1rem;
+  padding: 0px 0.5rem 0px 1rem;
 }
 </style>
