@@ -3,9 +3,12 @@
 import { useFlashcard } from '@/composables/flashcard'
 import { onMounted, ref } from 'vue'
 import History from '@/components/History.vue'
+import Setting from './Setting.vue'
 
 const { loadFinished, flashcard, showAnswer, HandleCorrect, HandleIncorrect } = useFlashcard()
+
 const historyDialog = ref(false) // Declare historyDialog as a reactive property
+const settingDialog = ref(false)
 
 onMounted(() => {
   window.addEventListener('keyup', handleKeyUp)
@@ -18,26 +21,32 @@ const handleKeyUp = (event: KeyboardEvent) => {
     case 'w':
     case 'W':
     case 'ArrowUp':
-      if (historyDialog.value) return
+      if (historyDialog.value || settingDialog.value) return
       // TODO: Toggle sort state if history dialog is open
       showAnswer.value = true
       break
     case 'a':
     case 'A':
     case 'ArrowLeft':
-      if (historyDialog.value) return
+      if (historyDialog.value || settingDialog.value) return
       if (showAnswer.value) HandleCorrect()
       break
     case 'd':
     case 'D':
     case 'ArrowRight':
-      if (historyDialog.value) return
+      if (historyDialog.value || settingDialog.value) return
       if (showAnswer.value) HandleIncorrect()
       break
     case 's':
     case 'S':
     case 'ArrowDown':
+      if (settingDialog.value) return
       historyDialog.value = !historyDialog.value // Toggle history dialog
+      break
+    case 'c':
+    case 'C':
+      if (historyDialog.value) return
+      if (!settingDialog.value) settingDialog.value = true // Close setting dialog if open
       break
   }
 }
@@ -83,6 +92,10 @@ const handleKeyUp = (event: KeyboardEvent) => {
       </v-btn>
       <History
         v-model="historyDialog"
+        :disabled="!loadFinished"
+      />
+      <Setting
+        v-model="settingDialog"
         :disabled="!loadFinished"
       />
       <v-btn
@@ -152,6 +165,7 @@ body {
   box-shadow: none; /* 移除陰影 */
   padding: 16px;
   justify-content: space-around;
+  flex-wrap: wrap; /* 允許換行 */
 }
 
 .icon-button {
