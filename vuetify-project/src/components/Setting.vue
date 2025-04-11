@@ -1,6 +1,5 @@
+<!-- src/components/Setting.vue -->
 <script setup lang="ts">
-// src/components/Setting.vue
-
 import { computed } from 'vue'
 import RecordsImportExport from '@/components/RecordsImportExport.vue'
 

@@ -1,6 +1,5 @@
+<!-- src/components/RecordsImportExport.vue -->
 <script setup lang="ts">
-// src/components/RecordsImportExport.vue
-
 import { ref } from 'vue'
 import { useElo } from '@/composables/elo'
 import type { Competitor } from '@/composables/elo'

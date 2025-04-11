@@ -1,9 +1,10 @@
+<!-- src/components/FlashCard.vue -->
 <script setup lang="ts">
-// src/components/FlashCard.vue
 import { useFlashcard } from '@/composables/flashcard'
 import { onMounted, ref } from 'vue'
-import History from '@/components/History.vue'
+import History from './History.vue'
 import Setting from './Setting.vue'
+import CountDownTimer from './CountdownTimer.vue'
 
 const { loadFinished, flashcard, showAnswer, HandleCorrect, HandleIncorrect } = useFlashcard()
 
@@ -62,6 +63,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
       :class="`flashcard-image ${showAnswer ? 'default' : 'cursor-pointer'}`"
       @click="showAnswer = true"
     />
+
     <p
       v-else
       class="loading-placeholder"
@@ -76,7 +78,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
       <v-toolbar-title class="flashcard-title">
         <transition mode="out-in">
           <span v-if="showAnswer">{{ flashcard.name }}</span>
-          <span v-else>???</span>
+          <CountdownTimer v-else>???</CountdownTimer>
         </transition>
       </v-toolbar-title>
     </v-toolbar>

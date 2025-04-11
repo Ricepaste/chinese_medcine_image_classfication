@@ -1,5 +1,5 @@
+<!-- src/components/History.vue -->
 <script setup lang="ts">
-// src/components/History.vue
 import { onMounted, onBeforeUnmount, computed, ref } from 'vue'
 import { useElo } from '@/composables/elo'
 
