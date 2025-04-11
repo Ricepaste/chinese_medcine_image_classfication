@@ -1,5 +1,4 @@
 // src/composables/elo.ts
-
 import { loadStateFromLocalUtil } from '@/utils/localStorageUtils'
 import { ref, type Ref } from 'vue'
 

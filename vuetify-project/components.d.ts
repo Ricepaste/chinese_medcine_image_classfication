@@ -7,6 +7,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    CountdownTimer: typeof import('./src/components/CountdownTimer.vue')['default']
     FlashCard: typeof import('./src/components/FlashCard.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     History: typeof import('./src/components/History.vue')['default']
@@ -14,6 +15,5 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Setting: typeof import('./src/components/Setting.vue')['default']
-    Settings: typeof import('./src/components/Settings.vue')['default']
   }
 }
